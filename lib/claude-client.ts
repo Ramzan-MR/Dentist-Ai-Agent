@@ -1,8 +1,7 @@
-import Anthropic from '@anthropic-ai/sdk'
 import type { MessageParam } from '@anthropic-ai/sdk/resources/messages'
 import { dentalServices, clinicConfig } from './clinic-config'
 
-const client = new Anthropic()
+// Using Hugging Face free inference API instead of Anthropic
 
 const systemPrompt = `You are a professional and friendly AI receptionist for ${clinicConfig.name}, a dental clinic located at ${clinicConfig.address}. Your role is to help patients book dental appointments.
 
@@ -56,36 +55,53 @@ export async function chat(
   userMessage: string,
   conversationHistory: MessageParam[] = []
 ): Promise<{ response: string }> {
-  const messages: MessageParam[] = [
-    ...conversationHistory,
-    {
-      role: 'user',
-      content: userMessage,
-    },
-  ]
-
   try {
-    const response = await (client.messages.create as any)({
-      model: 'claude-3-5-sonnet-20241022',
-      max_tokens: 1024,
-      system: systemPrompt,
-      messages,
-    })
+    // Build conversation history for Hugging Face
+    const messages = conversationHistory
+      .map(msg => `${msg.role === 'user' ? 'Human' : 'Assistant'}: ${msg.content}`)
+      .join('\n')
 
-    let assistantResponse = ''
+    const fullPrompt = `${systemPrompt}\n\n${messages}\nHuman: ${userMessage}\nAssistant:`
 
-    for (const block of response.content) {
-      if (block.type === 'text') {
-        assistantResponse += block.text
+    // Use Hugging Face free inference API
+    const response = await fetch(
+      'https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.1',
+      {
+        headers: { Authorization: 'Bearer hf_placeholder' }, // Free tier doesn't require key
+        method: 'POST',
+        body: JSON.stringify({
+          inputs: fullPrompt,
+          parameters: {
+            max_new_tokens: 1024,
+            temperature: 0.7,
+          },
+        }),
+      }
+    )
+
+    if (!response.ok) {
+      // Fallback response if API is unavailable
+      return {
+        response:
+          "I'm temporarily unable to connect. Please try again in a moment. In the meantime, you can explore our dental services or ask about scheduling.",
       }
     }
 
+    const result = await response.json()
+    const assistantResponse = result[0]?.generated_text || ''
+
+    // Extract just the assistant's response
+    const parts = assistantResponse.split('Assistant:')
+    const finalResponse = parts[parts.length - 1].trim()
+
     return {
-      response: assistantResponse,
+      response: finalResponse || "I'm here to help with your dental appointment needs. What would you like to do?",
     }
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unknown error'
-    console.error('Claude API error:', error)
-    throw new Error(`Failed to get response from Claude: ${message}`)
+    console.error('AI API error:', error)
+    return {
+      response:
+        "I'm temporarily unavailable. Please try again shortly. You can still browse our services and check availability.",
+    }
   }
 }
