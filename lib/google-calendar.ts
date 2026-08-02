@@ -14,7 +14,7 @@ function getAuthClient() {
   const privateKey = process.env.GOOGLE_PRIVATE_KEY
 
   if (!clientEmail || !privateKey) {
-    throw new Error('Missing Google Calendar configuration')
+    return null
   }
 
   return new google.auth.JWT({
@@ -29,6 +29,10 @@ export async function createCalendarEvent(
 ): Promise<{ success: boolean; eventId?: string; error?: string }> {
   try {
     const auth = getAuthClient()
+    if (!auth) {
+      return { success: false, error: 'Google Calendar not configured' }
+    }
+
     const calendar = google.calendar({ version: 'v3', auth })
     const calendarId = process.env.GOOGLE_CALENDAR_ID
 
@@ -84,6 +88,10 @@ export async function updateCalendarEvent(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const auth = getAuthClient()
+    if (!auth) {
+      return { success: false, error: 'Google Calendar not configured' }
+    }
+
     const calendar = google.calendar({ version: 'v3', auth })
     const calendarId = process.env.GOOGLE_CALENDAR_ID
 
@@ -134,6 +142,10 @@ export async function cancelCalendarEvent(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const auth = getAuthClient()
+    if (!auth) {
+      return { success: false, error: 'Google Calendar not configured' }
+    }
+
     const calendar = google.calendar({ version: 'v3', auth })
     const calendarId = process.env.GOOGLE_CALENDAR_ID
 
@@ -159,6 +171,10 @@ export async function getCalendarAvailability(
 ): Promise<{ success: boolean; busyPeriods?: Array<{ start: string; end: string }>; error?: string }> {
   try {
     const auth = getAuthClient()
+    if (!auth) {
+      return { success: true, busyPeriods: [] }
+    }
+
     const calendar = google.calendar({ version: 'v3', auth })
     const calendarId = process.env.GOOGLE_CALENDAR_ID
 

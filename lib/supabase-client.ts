@@ -5,14 +5,14 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
-// Allow missing keys during build time
-const isBuilding = process.env.NODE_ENV === 'production' && !supabaseUrl
+// Check if URL is valid (starts with https://)
+const isValidUrl = supabaseUrl && supabaseUrl.startsWith('https://')
 
-export const supabase = !isBuilding && supabaseUrl && supabaseAnonKey
+export const supabase = isValidUrl && supabaseAnonKey
   ? createClient(supabaseUrl as string, supabaseAnonKey as string)
   : (null as any)
 
-export const supabaseServer = !isBuilding && supabaseUrl && (supabaseServiceKey || supabaseAnonKey)
+export const supabaseServer = isValidUrl && (supabaseServiceKey || supabaseAnonKey)
   ? createClient(supabaseUrl as string, (supabaseServiceKey || supabaseAnonKey) as string)
   : (null as any)
 
@@ -20,6 +20,10 @@ export async function createAppointment(
   appointment: Omit<Appointment, 'id' | 'created_at' | 'updated_at'>
 ): Promise<{ success: boolean; data?: Appointment; error?: string }> {
   try {
+    if (!supabaseServer) {
+      return { success: false, error: 'Supabase not configured' }
+    }
+
     const { data, error } = await supabaseServer
       .from('appointments')
       .insert([appointment])
@@ -41,6 +45,10 @@ export async function getAppointmentsByEmail(
   email: string
 ): Promise<{ success: boolean; data?: Appointment[]; error?: string }> {
   try {
+    if (!supabaseServer) {
+      return { success: false, error: 'Supabase not configured' }
+    }
+
     const { data, error } = await supabaseServer
       .from('appointments')
       .select('*')
@@ -62,6 +70,10 @@ export async function getAppointmentByBookingReference(
   reference: string
 ): Promise<{ success: boolean; data?: Appointment; error?: string }> {
   try {
+    if (!supabaseServer) {
+      return { success: false, error: 'Supabase not configured' }
+    }
+
     const { data, error } = await supabaseServer
       .from('appointments')
       .select('*')
@@ -84,6 +96,10 @@ export async function getAppointmentsInDateRange(
   endDate: string
 ): Promise<{ success: boolean; data?: Appointment[]; error?: string }> {
   try {
+    if (!supabaseServer) {
+      return { success: false, error: 'Supabase not configured' }
+    }
+
     const { data, error } = await supabaseServer
       .from('appointments')
       .select('*')
@@ -107,6 +123,10 @@ export async function updateAppointment(
   updates: Partial<Appointment>
 ): Promise<{ success: boolean; data?: Appointment; error?: string }> {
   try {
+    if (!supabaseServer) {
+      return { success: false, error: 'Supabase not configured' }
+    }
+
     const { data, error } = await supabaseServer
       .from('appointments')
       .update(updates)
@@ -130,6 +150,10 @@ export async function cancelAppointment(
   reason: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
+    if (!supabaseServer) {
+      return { success: false, error: 'Supabase not configured' }
+    }
+
     const { error } = await supabaseServer
       .from('appointments')
       .update({ status: 'cancelled', cancellation_reason: reason })
@@ -151,6 +175,10 @@ export async function searchAppointments(
   field: 'patient_name' | 'phone' | 'email'
 ): Promise<{ success: boolean; data?: Appointment[]; error?: string }> {
   try {
+    if (!supabaseServer) {
+      return { success: false, error: 'Supabase not configured' }
+    }
+
     const { data, error } = await supabaseServer
       .from('appointments')
       .select('*')
