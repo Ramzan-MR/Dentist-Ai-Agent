@@ -18,22 +18,38 @@ export default function ChatInput({ onSendMessage, isLoading }: ChatInputProps) 
     }
   }
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey && !isLoading && input.trim()) {
+      e.preventDefault()
+      handleSubmit(e as any)
+    }
+  }
+
   return (
-    <form onSubmit={handleSubmit} className="flex gap-2">
+    <form onSubmit={handleSubmit} className="flex items-center gap-2">
       <input
         type="text"
         value={input}
         onChange={e => setInput(e.target.value)}
-        placeholder="Type your message..."
+        onKeyDown={handleKeyDown}
+        placeholder="Type your message or press Enter..."
         disabled={isLoading}
-        className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-dental-600 disabled:bg-gray-100"
+        autoFocus
+        className="flex-1 px-4 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-dental-600 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed transition-all"
       />
       <button
         type="submit"
         disabled={isLoading || !input.trim()}
-        className="px-6 py-2 bg-dental-600 text-white rounded-lg hover:bg-dental-700 disabled:bg-gray-400 transition-colors font-medium"
+        className="px-5 py-2.5 bg-dental-600 text-white text-sm font-medium rounded-lg hover:bg-dental-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
+        title={input.trim() ? 'Send message (Enter)' : 'Type a message to send'}
       >
-        {isLoading ? 'Sending...' : 'Send'}
+        {isLoading ? (
+          <span className="inline-flex items-center gap-1">
+            <span className="animate-spin">↻</span> Sending
+          </span>
+        ) : (
+          'Send'
+        )}
       </button>
     </form>
   )
