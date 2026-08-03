@@ -14,7 +14,9 @@
       "Bash(git remote *)",
       "PowerShell($env:Path = \"C:\\\\Program Files\\\\nodejs;$env:Path\"; cd \"C:\\\\Users\\\\Dell\\\\Music\\\\My 1st Agent\"; npm install -g vercel 2>&1 | Select-Object -Last 5)",
       "PowerShell($env:Path = \"C:\\\\Program Files\\\\nodejs;$env:Path\"; cd \"C:\\\\Users\\\\Dell\\\\Music\\\\My 1st Agent\"; npm run build 2>&1 | Select-Object -Last 40)",
-      "PowerShell($env:Path = \"C:\\\\Program Files\\\\nodejs;$env:Path\"; cd \"C:\\\\Users\\\\Dell\\\\Music\\\\My 1st Agent\"; npm run build 2>&1 | tail -50)"
+      "PowerShell($env:Path = \"C:\\\\Program Files\\\\nodejs;$env:Path\"; cd \"C:\\\\Users\\\\Dell\\\\Music\\\\My 1st Agent\"; npm run build 2>&1 | tail -50)",
+      "Bash(rm -rf .next)",
+      "Bash(npm run *)"
     ]
   }
 }

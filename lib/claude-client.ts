@@ -1,9 +1,5 @@
 // Smart appointment assistant - completely free, no external API calls needed!
 
-export interface ToolInput {
-  [key: string]: string | number | boolean | object | null | undefined
-}
-
 // Smart appointment booking assistant - completely free, no API keys needed
 function generateSmartResponse(userMessage: string): string {
   const message = userMessage.toLowerCase().trim()

@@ -13,6 +13,7 @@ interface Message {
 }
 
 const BOOKING_STEPS = ['Name', 'Service', 'Date', 'Time', 'Contact Info', 'Confirmation', 'Completed']
+const TOTAL_STEPS = BOOKING_STEPS.length
 
 function detectBookingStep(messages: Message[]): number {
   const conversation = messages.map(m => m.content.toLowerCase()).join(' ')
@@ -128,7 +129,7 @@ export default function ChatInterface() {
           <div className="flex items-center justify-between mb-3">
             <div>
               <h1 className="text-2xl sm:text-3xl font-bold">{clinicConfig.name}</h1>
-              {currentStep > 0 && <p className="text-dental-100 text-xs sm:text-sm mt-1">Step {currentStep}/7</p>}
+              {currentStep > 0 && <p className="text-dental-100 text-xs sm:text-sm mt-1">Step {currentStep}/{TOTAL_STEPS}</p>}
             </div>
             <div className="text-right">
               <div className="w-12 h-12 bg-white bg-opacity-20 rounded-full flex items-center justify-center text-xl">🦷</div>
@@ -139,12 +140,12 @@ export default function ChatInterface() {
             <div>
               <div className="flex justify-between items-center mb-1">
                 <span className="text-xs font-medium">Booking Progress</span>
-                <span className="text-xs">{currentStep}/7</span>
+                <span className="text-xs">{currentStep}/{TOTAL_STEPS}</span>
               </div>
               <div className="w-full bg-white bg-opacity-30 rounded-full h-2 overflow-hidden">
                 <div
                   className="bg-white h-full transition-all duration-300 rounded-full"
-                  style={{ width: `${(currentStep / 7) * 100}%` }}
+                  style={{ width: `${(currentStep / TOTAL_STEPS) * 100}%` }}
                 />
               </div>
             </div>
@@ -170,7 +171,7 @@ export default function ChatInterface() {
             )}
 
             {messages.map(msg => (
-              <ChatMessage key={msg.id} message={msg} currentStep={currentStep} totalSteps={7} />
+              <ChatMessage key={msg.id} message={msg} currentStep={currentStep} totalSteps={TOTAL_STEPS} />
             ))}
 
             {isLoading && (
