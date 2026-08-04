@@ -63,17 +63,14 @@ export default function ChatInterface() {
       const isBookingRequest = contentLower.includes('book') || contentLower.includes('appointment') || contentLower.includes('schedule')
 
       let assistantResponse = ''
-      let nextStep = bookingStep
 
       if (bookingStep === 0 && isBookingRequest) {
         // Start booking process
-        nextStep = 1
         assistantResponse = `Great! I'd be happy to help you book an appointment at ${clinicConfig.name}.\n\n📋 Step 1 of ${TOTAL_STEPS}: What is your full name?`
         setBookingStep(1)
       } else if (bookingStep === 1 && content.trim().length > 2) {
         // Collect name
         setBookingData(prev => ({ ...prev, patientName: content.trim() }))
-        nextStep = 2
         setBookingStep(2)
         assistantResponse = `Nice to meet you, ${content.trim()}! 👋\n\n📋 Step 2 of ${TOTAL_STEPS}: Which service would you like?\n\n• General Checkup - $60\n• Teeth Cleaning - $85\n• Teeth Whitening - $150\n• Dental Filling - $120\n• Root Canal - $400\n• Tooth Extraction - $150\n• Dental Implants - $1,500\n• Emergency Consultation - $75\n\nJust type the service name.`
       } else if (bookingStep === 2) {
@@ -83,7 +80,6 @@ export default function ChatInterface() {
 
         if (matchedService) {
           setBookingData(prev => ({ ...prev, service: matchedService }))
-          nextStep = 3
           setBookingStep(3)
           assistantResponse = `Perfect! ${matchedService} is a great choice. 🦷\n\n📋 Step 3 of ${TOTAL_STEPS}: What date would you prefer? (e.g., tomorrow, next Monday, or a specific date)`
         } else {
@@ -92,32 +88,31 @@ export default function ChatInterface() {
       } else if (bookingStep === 3) {
         // Collect date
         setBookingData(prev => ({ ...prev, date: content.trim() }))
-        nextStep = 4
         setBookingStep(4)
         assistantResponse = `Great! ${content.trim()} works. 📅\n\n📋 Step 4 of ${TOTAL_STEPS}: What time would you prefer? (e.g., 9:00 AM, 2:30 PM, or morning/afternoon)`
       } else if (bookingStep === 4) {
         // Collect time
         setBookingData(prev => ({ ...prev, time: content.trim() }))
-        nextStep = 5
         setBookingStep(5)
         assistantResponse = `Excellent! ${content.trim()} is noted. ⏰\n\n📋 Step 5 of ${TOTAL_STEPS}: What's your phone number?`
       } else if (bookingStep === 5) {
-        // Collect phone
-        setBookingData(prev => ({ ...prev, phone: content.trim() }))
+        // Collect phone/email
+        const updatedData = { ...bookingData, phone: content.trim() }
+        setBookingData(updatedData)
         const isEmail = content.includes('@')
 
         if (isEmail) {
-          setBookingData(prev => ({ ...prev, email: content.trim(), phone: prev.phone || '' }))
+          updatedData.email = content.trim()
+          setBookingData(updatedData)
           nextStep = 6
           setBookingStep(6)
-          assistantResponse = `Perfect! ${content.trim()} is confirmed. ✓\n\n📋 Step 6 of ${TOTAL_STEPS}: Let me confirm your booking details:\n\n👤 Name: ${bookingData.patientName}\n🦷 Service: ${bookingData.service}\n📅 Date: ${bookingData.date}\n⏰ Time: ${bookingData.time}\n📱 Contact: ${content.trim()}\n\nDoes everything look correct? (Reply with "yes" to confirm)`
+          assistantResponse = `Perfect! ${content.trim()} is confirmed. ✓\n\n📋 Step 6 of ${TOTAL_STEPS}: Let me confirm your booking details:\n\n👤 Name: ${updatedData.patientName}\n🦷 Service: ${updatedData.service}\n📅 Date: ${updatedData.date}\n⏰ Time: ${updatedData.time}\n📱 Contact: ${content.trim()}\n\nDoes everything look correct? (Reply with "yes" to confirm)`
         } else {
           assistantResponse = `Got it! ${content.trim()} 📱\n\n📋 Step 5b: And your email address please?`
         }
       } else if (bookingStep === 6) {
         // Confirmation
         if (contentLower.includes('yes') || contentLower.includes('correct') || contentLower.includes('confirm')) {
-          nextStep = 7
           setBookingStep(7)
           const bookingRef = `BR-${Date.now().toString().slice(-6)}`
           assistantResponse = `🎉 Congratulations! Your appointment has been booked!\n\n✅ Booking Confirmed\nReference #: ${bookingRef}\n\n📋 Step 7 of ${TOTAL_STEPS}: Complete!\n\nDetails:\n👤 Name: ${bookingData.patientName}\n🦷 Service: ${bookingData.service}\n📅 Date: ${bookingData.date}\n⏰ Time: ${bookingData.time}\n📱 Phone: ${bookingData.phone}\n\nWe'll send you a reminder before your appointment. Thank you for choosing ${clinicConfig.name}!`
