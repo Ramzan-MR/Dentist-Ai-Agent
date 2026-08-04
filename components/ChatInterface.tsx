@@ -104,7 +104,6 @@ export default function ChatInterface() {
         if (isEmail) {
           updatedData.email = content.trim()
           setBookingData(updatedData)
-          nextStep = 6
           setBookingStep(6)
           assistantResponse = `Perfect! ${content.trim()} is confirmed. ✓\n\n📋 Step 6 of ${TOTAL_STEPS}: Let me confirm your booking details:\n\n👤 Name: ${updatedData.patientName}\n🦷 Service: ${updatedData.service}\n📅 Date: ${updatedData.date}\n⏰ Time: ${updatedData.time}\n📱 Contact: ${content.trim()}\n\nDoes everything look correct? (Reply with "yes" to confirm)`
         } else {
