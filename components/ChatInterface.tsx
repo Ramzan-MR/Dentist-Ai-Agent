@@ -12,41 +12,32 @@ interface Message {
   content: string
 }
 
-const BOOKING_STEPS = ['Name', 'Service', 'Date', 'Time', 'Contact Info', 'Confirmation', 'Completed']
-const TOTAL_STEPS = BOOKING_STEPS.length
-
-function detectBookingStep(messages: Message[]): number {
-  const conversation = messages.map(m => m.content.toLowerCase()).join(' ')
-
-  if (conversation.includes('name')) return 1
-  if (conversation.includes('service') || conversation.includes('treatment')) return 2
-  if (conversation.includes('date') || conversation.includes('when')) return 3
-  if (conversation.includes('time') || conversation.includes('slot') || conversation.includes('available')) return 4
-  if (conversation.includes('phone') || conversation.includes('email')) return 5
-  if (conversation.includes('confirm') || conversation.includes('booking')) return 6
-  if (conversation.includes('completed') || conversation.includes('confirmed')) return 7
-
-  return 0
+interface BookingData {
+  patientName?: string
+  service?: string
+  date?: string
+  time?: string
+  phone?: string
+  email?: string
 }
+
+const BOOKING_STEPS = ['Name', 'Service', 'Date', 'Time', 'Contact', 'Confirmation', 'Complete']
+const TOTAL_STEPS = BOOKING_STEPS.length
 
 export default function ChatInterface() {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
       role: 'assistant',
-      content: `Welcome to ${clinicConfig.name}! 👋 I'm your AI assistant. How can I help you today? You can book an appointment, check our services, or ask about our clinic.`,
+      content: `Welcome to ${clinicConfig.name}! 👋 I'm here to help you book an appointment or answer any questions. What can I do for you today?`,
     },
   ])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [currentStep, setCurrentStep] = useState(0)
+  const [bookingStep, setBookingStep] = useState(0)
+  const [bookingData, setBookingData] = useState<BookingData>({})
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const messageContainerRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    const step = detectBookingStep(messages)
-    setCurrentStep(step)
-  }, [messages])
 
   useEffect(() => {
     if (messagesEndRef.current) {
@@ -57,7 +48,6 @@ export default function ChatInterface() {
   const handleSendMessage = async (content: string) => {
     if (!content.trim()) return
 
-    // Add user message
     const userMessage: Message = {
       id: Date.now().toString(),
       role: 'user',
@@ -68,35 +58,100 @@ export default function ChatInterface() {
     setIsLoading(true)
 
     try {
-      // Convert messages to the format expected by the API
-      const history = messages.map(msg => ({
-        role: msg.role as 'user' | 'assistant',
-        content: msg.content,
-      }))
+      // Check if user wants to book an appointment
+      const contentLower = content.toLowerCase()
+      const isBookingRequest = contentLower.includes('book') || contentLower.includes('appointment') || contentLower.includes('schedule')
 
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          message: content,
-          history,
-        }),
-      })
+      let assistantResponse = ''
+      let nextStep = bookingStep
 
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to send message')
+      if (bookingStep === 0 && isBookingRequest) {
+        // Start booking process
+        nextStep = 1
+        assistantResponse = `Great! I'd be happy to help you book an appointment at ${clinicConfig.name}.\n\n📋 Step 1 of ${TOTAL_STEPS}: What is your full name?`
+        setBookingStep(1)
+      } else if (bookingStep === 1 && content.trim().length > 2) {
+        // Collect name
+        setBookingData(prev => ({ ...prev, patientName: content.trim() }))
+        nextStep = 2
+        setBookingStep(2)
+        assistantResponse = `Nice to meet you, ${content.trim()}! 👋\n\n📋 Step 2 of ${TOTAL_STEPS}: Which service would you like?\n\n• General Checkup - $60\n• Teeth Cleaning - $85\n• Teeth Whitening - $150\n• Dental Filling - $120\n• Root Canal - $400\n• Tooth Extraction - $150\n• Dental Implants - $1,500\n• Emergency Consultation - $75\n\nJust type the service name.`
+      } else if (bookingStep === 2) {
+        // Collect service
+        const services = ['General Checkup', 'Teeth Cleaning', 'Teeth Whitening', 'Dental Filling', 'Root Canal', 'Tooth Extraction', 'Dental Implants', 'Emergency Consultation']
+        const matchedService = services.find(s => content.toLowerCase().includes(s.toLowerCase()))
+
+        if (matchedService) {
+          setBookingData(prev => ({ ...prev, service: matchedService }))
+          nextStep = 3
+          setBookingStep(3)
+          assistantResponse = `Perfect! ${matchedService} is a great choice. 🦷\n\n📋 Step 3 of ${TOTAL_STEPS}: What date would you prefer? (e.g., tomorrow, next Monday, or a specific date)`
+        } else {
+          assistantResponse = `I didn't recognize that service. Please choose from:\n• General Checkup\n• Teeth Cleaning\n• Teeth Whitening\n• Dental Filling\n• Root Canal\n• Tooth Extraction\n• Dental Implants\n• Emergency Consultation`
+        }
+      } else if (bookingStep === 3) {
+        // Collect date
+        setBookingData(prev => ({ ...prev, date: content.trim() }))
+        nextStep = 4
+        setBookingStep(4)
+        assistantResponse = `Great! ${content.trim()} works. 📅\n\n📋 Step 4 of ${TOTAL_STEPS}: What time would you prefer? (e.g., 9:00 AM, 2:30 PM, or morning/afternoon)`
+      } else if (bookingStep === 4) {
+        // Collect time
+        setBookingData(prev => ({ ...prev, time: content.trim() }))
+        nextStep = 5
+        setBookingStep(5)
+        assistantResponse = `Excellent! ${content.trim()} is noted. ⏰\n\n📋 Step 5 of ${TOTAL_STEPS}: What's your phone number?`
+      } else if (bookingStep === 5) {
+        // Collect phone
+        setBookingData(prev => ({ ...prev, phone: content.trim() }))
+        const isEmail = content.includes('@')
+
+        if (isEmail) {
+          setBookingData(prev => ({ ...prev, email: content.trim(), phone: prev.phone || '' }))
+          nextStep = 6
+          setBookingStep(6)
+          assistantResponse = `Perfect! ${content.trim()} is confirmed. ✓\n\n📋 Step 6 of ${TOTAL_STEPS}: Let me confirm your booking details:\n\n👤 Name: ${bookingData.patientName}\n🦷 Service: ${bookingData.service}\n📅 Date: ${bookingData.date}\n⏰ Time: ${bookingData.time}\n📱 Contact: ${content.trim()}\n\nDoes everything look correct? (Reply with "yes" to confirm)`
+        } else {
+          assistantResponse = `Got it! ${content.trim()} 📱\n\n📋 Step 5b: And your email address please?`
+        }
+      } else if (bookingStep === 6) {
+        // Confirmation
+        if (contentLower.includes('yes') || contentLower.includes('correct') || contentLower.includes('confirm')) {
+          nextStep = 7
+          setBookingStep(7)
+          const bookingRef = `BR-${Date.now().toString().slice(-6)}`
+          assistantResponse = `🎉 Congratulations! Your appointment has been booked!\n\n✅ Booking Confirmed\nReference #: ${bookingRef}\n\n📋 Step 7 of ${TOTAL_STEPS}: Complete!\n\nDetails:\n👤 Name: ${bookingData.patientName}\n🦷 Service: ${bookingData.service}\n📅 Date: ${bookingData.date}\n⏰ Time: ${bookingData.time}\n📱 Phone: ${bookingData.phone}\n\nWe'll send you a reminder before your appointment. Thank you for choosing ${clinicConfig.name}!`
+        } else {
+          assistantResponse = `No problem! What would you like to change?`
+        }
+      } else if (bookingStep === 7) {
+        // After completion, offer new booking
+        if (contentLower.includes('book') || contentLower.includes('appointment')) {
+          setBookingStep(0)
+          setBookingData({})
+          assistantResponse = `I'd be happy to help you book another appointment! What service would you like?`
+        } else {
+          assistantResponse = `Is there anything else I can help you with today?`
+        }
+      } else if (!isBookingRequest && bookingStep === 0) {
+        // General inquiry
+        const response = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: content, history: messages }),
+        })
+
+        if (!response.ok) throw new Error('API error')
+        const data = await response.json()
+        assistantResponse = data.response
+      } else {
+        assistantResponse = `Would you like to book an appointment, or is there something else I can help you with?`
       }
 
-      const data = await response.json()
-
-      // Add assistant response
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: data.response,
+        content: assistantResponse,
       }
       setMessages(prev => [...prev, assistantMessage])
     } catch (err) {
@@ -129,23 +184,23 @@ export default function ChatInterface() {
           <div className="flex items-center justify-between mb-3">
             <div>
               <h1 className="text-2xl sm:text-3xl font-bold">{clinicConfig.name}</h1>
-              {currentStep > 0 && <p className="text-dental-100 text-xs sm:text-sm mt-1">Step {currentStep}/{TOTAL_STEPS}</p>}
+              {bookingStep > 0 && <p className="text-dental-100 text-xs sm:text-sm mt-1">Step {bookingStep}/{TOTAL_STEPS}</p>}
             </div>
             <div className="text-right">
               <div className="w-12 h-12 bg-white bg-opacity-20 rounded-full flex items-center justify-center text-xl">🦷</div>
             </div>
           </div>
 
-          {currentStep > 0 && (
+          {bookingStep > 0 && (
             <div>
               <div className="flex justify-between items-center mb-1">
                 <span className="text-xs font-medium">Booking Progress</span>
-                <span className="text-xs">{currentStep}/{TOTAL_STEPS}</span>
+                <span className="text-xs">{bookingStep}/{TOTAL_STEPS}</span>
               </div>
               <div className="w-full bg-white bg-opacity-30 rounded-full h-2 overflow-hidden">
                 <div
                   className="bg-white h-full transition-all duration-300 rounded-full"
-                  style={{ width: `${(currentStep / TOTAL_STEPS) * 100}%` }}
+                  style={{ width: `${(bookingStep / TOTAL_STEPS) * 100}%` }}
                 />
               </div>
             </div>
@@ -171,7 +226,7 @@ export default function ChatInterface() {
             )}
 
             {messages.map(msg => (
-              <ChatMessage key={msg.id} message={msg} currentStep={currentStep} totalSteps={TOTAL_STEPS} />
+              <ChatMessage key={msg.id} message={msg} currentStep={bookingStep} totalSteps={TOTAL_STEPS} />
             ))}
 
             {isLoading && (
