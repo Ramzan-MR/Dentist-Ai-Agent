@@ -1,0 +1,9 @@
+[build]
+builder = "nixpacks"
+buildCommand = "npm install"
+
+[deploy]
+startCommand = "node -r ts-node/register -r tsconfig-paths/register server/voice-ws.ts"
+healthcheckPath = "/"
+healthcheckTimeout = 300
+restartPolicyType = "always"
