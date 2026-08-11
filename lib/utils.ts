@@ -49,6 +49,8 @@ export function isWorkingDay(date: Date, workingDays: string[]): boolean {
 export function sanitizeInput(input: string): string {
   return input
     .trim()
-    .replace(/[<>]/g, '')
+    .replace(/<script[\s\S]*?<\/script>/gi, '')  // strip script blocks with their content
+    .replace(/<style[\s\S]*?<\/style>/gi, '')    // strip style blocks with their content
+    .replace(/<[^>]+>/g, '')                     // strip remaining HTML tags
     .substring(0, 500)
 }

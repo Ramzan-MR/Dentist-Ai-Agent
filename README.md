@@ -1,25 +1,62 @@
-# AI Dental Appointment Booking System
+# AI Dental Appointment Booking System — Omnichannel AI Agent
 
-A production-ready, AI-powered dental clinic appointment booking system built with Next.js, Anthropic Claude AI, Supabase, and Google Calendar integration.
+A production-ready, AI-powered dental clinic system supporting **Web Chat**, **WhatsApp**, and **AI Phone Calling** — all using the same Claude AI brain.
+
+## Omnichannel Architecture
+
+```
+                   ┌──────────────────────┐
+                   │    AI AGENT CORE      │
+                   │  (Claude Haiku 4.5)   │
+                   │                       │
+                   │  System Prompt        │
+                   │  Clinic Knowledge     │
+                   │  Tool Definitions     │
+                   │  Conversation Memory  │
+                   └────────┬─────────────┘
+                            │
+         ┌──────────────────┼──────────────────┐
+         │                  │                  │
+         ▼                  ▼                  ▼
+   WEBSITE CHAT         WHATSAPP           PHONE CALL
+   /api/chat        /api/whatsapp/     /api/voice/incoming
+   Existing UI       webhook            TwiML + ConvRelay
+                   Twilio Messaging     WebSocket on Railway
+         │                  │                  │
+         └──────────────────┼──────────────────┘
+                            │
+                    Shared Supabase DB
+                  (customers, conversations,
+                   messages, leads, appointments)
+```
+
+All three channels route messages through `lib/agent/run-agent.ts` → Claude AI → tool execution → response.
+
+## Channels
+
+- **Web Chat**: Existing React UI, connects to `/api/chat` which calls the shared agent
+- **WhatsApp**: Twilio WhatsApp API, webhook at `/api/whatsapp/webhook`, persistent conversation per sender
+- **Phone**: Twilio Voice + ConversationRelay, WebSocket server deployed on Railway for long-lived sessions
 
 ## Features
 
-✨ **AI Receptionist**: Intelligent chatbot powered by Claude 3.5 Sonnet for natural patient interactions
-📅 **Smart Scheduling**: Automatic availability checking with Google Calendar integration
-🗓️ **Appointment Management**: Full lifecycle management (booking, rescheduling, cancellation)
-👥 **Admin Dashboard**: Comprehensive appointment management interface for clinic staff
-🔒 **Secure**: Server-side API keys, input validation, and authorization checks
-📱 **Responsive**: Mobile-friendly design with Tailwind CSS
-💾 **Database**: Supabase for reliable data storage
-🔄 **Sync**: Two-way sync between Supabase and Google Calendar
+- AI Receptionist across all three channels (same knowledge, same personality)
+- Appointment booking, availability checking, service information
+- Persistent conversation memory (WhatsApp remembers across messages)
+- Customer identity across channels (phone number recognition)
+- Lead capture with structured data
+- Human handoff escalation
+- Secure outbound calling endpoint
+- Twilio webhook signature validation
 
 ## Tech Stack
 
 - **Frontend**: Next.js 14 with TypeScript and Tailwind CSS
-- **AI**: Anthropic Claude 3.5 Sonnet
+- **AI**: Anthropic Claude Haiku 4.5 (via `@anthropic-ai/sdk`)
+- **Voice/WhatsApp**: Twilio Programmable Voice + WhatsApp API
 - **Database**: Supabase (PostgreSQL)
 - **Calendar**: Google Calendar API
-- **Validation**: Zod schemas
+- **WebSocket**: `ws` library (standalone server on Railway)
 - **Testing**: Jest + React Testing Library
 
 ## Prerequisites

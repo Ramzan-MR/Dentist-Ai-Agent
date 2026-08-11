@@ -116,19 +116,33 @@ export const dentalServices: DentalService[] = [
 export function validateEnvironmentVariables(): string[] {
   const errors: string[] = []
 
-  const requiredVars = [
+  // These must be set for the app to function
+  const required = [
     'ANTHROPIC_API_KEY',
     'NEXT_PUBLIC_SUPABASE_URL',
     'NEXT_PUBLIC_SUPABASE_ANON_KEY',
     'SUPABASE_SERVICE_ROLE_KEY',
+  ]
+
+  for (const v of required) {
+    if (!process.env[v]) {
+      errors.push(`Missing required environment variable: ${v}`)
+    }
+  }
+
+  // Optional — warn but don't fail
+  const optional = [
+    'TWILIO_ACCOUNT_SID',
+    'TWILIO_AUTH_TOKEN',
+    'TWILIO_PHONE_NUMBER',
+    'TWILIO_WHATSAPP_NUMBER',
     'GOOGLE_CLIENT_EMAIL',
     'GOOGLE_PRIVATE_KEY',
     'GOOGLE_CALENDAR_ID',
   ]
-
-  for (const variable of requiredVars) {
-    if (!process.env[variable]) {
-      errors.push(`Missing environment variable: ${variable}`)
+  for (const v of optional) {
+    if (!process.env[v]) {
+      console.warn(`[CONFIG] Optional variable not set: ${v}`)
     }
   }
 
